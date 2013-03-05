@@ -14,3 +14,6 @@ DONE:
  - Application turns on usbnet before running
  - Run as Kite application instead of "on-boot" (my kindle used to get stuck in boot loops since the framework didn't want to be killed so early)
  - Dirtily removing reliance on cron, by simply running inside a loop (yes... hate me...)
+
+NOT WORKING YET, but WORKING ON IT:
+ - Contents of Server folder

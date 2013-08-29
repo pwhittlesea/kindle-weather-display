@@ -20,9 +20,10 @@ $cachedWeatherUrl = "weather-data.xml";				// XML file that stores the weather d
 $svgTemplate = "weather-script-preprocess.svg";		// SVG template with variable names as place-holders
 $svgProcessed = "weather-script-output.svg";		// Output file after processing SVG template
 $pngProcessed = "weather-script-output.png";		// Output PNG file after conversion
+$weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx"; // The base URL for the weather service
 
 // API URL
-$APIurl = 'http://free.worldweatheronline.com/feed/weather.ashx?q='.$_SERVER['REMOTE_ADDR'].'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
+$APIurl = $weatherOnlineURL.'?q='.$_SERVER['REMOTE_ADDR'].'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
 
 // Equivalence table between original icons
 // 		from https://github.com/mpetroff/kindle-weather-display 

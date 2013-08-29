@@ -101,7 +101,7 @@ if (!is_file($cachedWeatherUrl) || (time()>(filemtime($cachedWeatherUrl)+$cacheP
 	$str=str_replace("ICON_FOUR", $iconEquivalence["".$xml->weather[3]->weatherCode],$str);
 	$str=str_replace("DAY_THREE", "In 2 days",$str);
 	$str=str_replace("DAY_FOUR", "In 3 days",$str);
-	if($temp_format == "F"){
+	if($tempFormat == "F"){
 		$str=str_replace("TEMP_ONE", $xml->current_condition->temp_F,$str);
 		$str=str_replace("HIGH_TWO", $xml->weather[1]->tempMaxF,$str);
 		$str=str_replace("LOW_TWO", $xml->weather[1]->tempMinF,$str);

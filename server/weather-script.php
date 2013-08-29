@@ -8,6 +8,7 @@
 //
 //		Date: 2013-03-06
 //		MorganHK
+//		pwhittlesea
 //
 
 
@@ -15,6 +16,7 @@ $API_key="";					// Free worldweatheronline.com API key
 $cachePeriod="3600"; 			// Cache the Weather data for 3600seconds (1h)
 $retrievePeriod="5"; 			// Retrieve the data for 5days
 $tempFormat="C"; 				// "C" for Celsius or "F" for Fahrenheit
+$queryLocation=$_SERVER['REMOTE_ADDR'];				// The location to query
 
 $cachedWeatherUrl = "weather-data.xml";				// XML file that stores the weather data
 $svgTemplate = "weather-script-preprocess.svg";		// SVG template with variable names as place-holders
@@ -22,11 +24,16 @@ $svgProcessed = "weather-script-output.svg";		// Output file after processing SV
 $pngProcessed = "weather-script-output.png";		// Output PNG file after conversion
 $weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx"; // The base URL for the weather service
 
+// If the user chooses to use a postcode instead of the IP
+if (isset($_GET['POSTCODE'])) {
+	$queryLocation = $_GET['POSTCODE'];
+}
+
 // API URL
-$APIurl = $weatherOnlineURL.'?q='.$_SERVER['REMOTE_ADDR'].'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
+$APIurl = $weatherOnlineURL.'?q='.$queryLocation.'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
 
 // Equivalence table between original icons
-// 		from https://github.com/mpetroff/kindle-weather-display 
+// 		from https://github.com/mpetroff/kindle-weather-display
 //		to worldweatheronline.com weather codes
 $iconEquivalence["113"] = "skc";
 $iconEquivalence["116"] = "sct";
@@ -100,8 +107,8 @@ if (!is_file($cachedWeatherUrl) || (time()>(filemtime($cachedWeatherUrl)+$cacheP
 	$str=str_replace("ICON_TWO", $iconEquivalence["".$xml->weather[1]->weatherCode],$str);
 	$str=str_replace("ICON_THREE", $iconEquivalence["".$xml->weather[2]->weatherCode],$str);
 	$str=str_replace("ICON_FOUR", $iconEquivalence["".$xml->weather[3]->weatherCode],$str);
-	$str=str_replace("DAY_THREE", "In 2 days",$str);
-	$str=str_replace("DAY_FOUR", "In 3 days",$str);
+	$str=str_replace("DAY_THREE", date('l', strtotime('+2 days')),$str);
+	$str=str_replace("DAY_FOUR", date('l', strtotime('+3 days')),$str);
 	if($tempFormat == "F"){
 		$str=str_replace("TEMP_ONE", $xml->current_condition->temp_F,$str);
 		$str=str_replace("HIGH_TWO", $xml->weather[1]->tempMaxF,$str);

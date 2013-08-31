@@ -12,6 +12,7 @@
 //
 require("settings.php");
 require("YahooWeather.class.php");
+require("Quotes.class.php");
 require("Util.class.php");
 
 /**------------------- STATICS ------------------**/
@@ -109,6 +110,12 @@ if (Util::$DEBUG || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedW
 			$str = str_replace("SPECIAL_ITEM", "bin_day", $str);
 			$specialMSG = true;
 		}
+	}
+
+	if (Quotes::isQuoteTime()) {
+		$replacements = Quotes::getLatestQuoteAndAuthor();
+		$str = str_replace(array_keys($replacements), array_values($replacements), $str);
+		$specialMSG = true;
 	}
 
 	// Fetch our RSS feed data

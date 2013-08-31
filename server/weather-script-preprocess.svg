@@ -33,6 +33,16 @@
 		</g>
 		<text style="text-anchor:middle;" font-size="40px" y="720" x="300">BIN_DAY_TYPE</text>
 	</g>
+	<g id="qotd">
+		<line x1="20" y1="640" x2="580" y2="640" style="stroke-width: 2.5; stroke: black;"/>
+		<g font-family="DejaVu Sans">
+			<text style="text-anchor:end;" font-size="20px" y="680" x="580">QUOTE_0</text>
+			<text style="text-anchor:end;" font-size="20px" y="700" x="580">QUOTE_1</text>
+			<text style="text-anchor:end;" font-size="20px" y="720" x="580">QUOTE_2</text>
+			<text style="text-anchor:end;" font-size="20px" y="740" x="580">QUOTE_3</text>
+			<text style="text-anchor:end;" font-size="20px" y="760" x="580">QUOTE_4</text>
+		</g>
+	</g>
 </defs>
 
 <!-- Todays image and details -->

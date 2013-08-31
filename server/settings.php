@@ -3,8 +3,8 @@
 //		Date: 2013-08-30
 //		pwhittlesea
 
-// Cache the Weather data for 3600 seconds (1h)
-$cachePeriod = "3600";
+// Cache the Weather data for 3600 seconds (1/2h)
+$cachePeriod = "1800";
 
 // "C" for Celsius or "F" for Fahrenheit
 $tempFormat = "C";

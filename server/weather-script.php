@@ -10,23 +10,32 @@
 //		MorganHK
 //		pwhittlesea
 //
+include_once("settings.php");
 
-$API_key = "";										// Free worldweatheronline.com API key
-$cachePeriod = "3600";								// Cache the Weather data for 3600 seconds (1h)
-$retrievePeriod = "5";								// Retrieve the data for 5days
-$tempFormat = "C";									// "C" for Celsius or "F" for Fahrenheit
-$queryLocation = $_SERVER['REMOTE_ADDR'];				// The location to query
+/**------------------- STATICS ------------------**/
 
-$cachedWeatherUrl = "weather-data.xml";				// XML file that stores the weather data
-$svgTemplate = "weather-script-preprocess.svg";		// SVG template with variable names as place-holders
-$svgProcessed = "weather-script-output.svg";		// Output file after processing SVG template
-$pngProcessed = "weather-script-output.png";		// Output PNG file after conversion
-$weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx"; // The base URL for the weather service
+// XML file that stores the weather data
+$cachedWeatherUrl = "weather-data.xml";
 
-// If the user chooses to use a postcode instead of the IP
-if (isset($_GET['POSTCODE'])) {
-	$queryLocation = $_GET['POSTCODE'];
-}
+// SVG template with variable names as place-holders
+$svgTemplate = "weather-script-preprocess.svg";
+
+// Output file after processing SVG template
+$svgProcessed = "weather-script-output.svg";
+
+// Output PNG file after conversion
+$pngProcessed = "weather-script-output.png";
+
+// The base URL for the weather service
+$weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx";
+
+/**--------------- END OF STATICS ---------------**/
+
+// The location to query
+$queryLocation = (isset($staticLocation) && $staticLocation != "") ? $staticLocation : $_SERVER['REMOTE_ADDR'];
+
+// Are we debugging
+$debug = (isset($_GET['develop'])) ? true : false;
 
 // API URL
 $APIurl = $weatherOnlineURL.'?q='.$queryLocation.'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
@@ -85,18 +94,43 @@ $iconEquivalence = array(
 	"395" => "blizzard"
 );
 
+function exitFor503($msg) {
+	global $debug;
+
+	header('HTTP/1.1 503 Service Temporarily Unavailable');
+	header('Status: 503 Service Temporarily Unavailable');
+	header('Retry-After: 300');
+	if ($debug) {
+		echo $msg;
+	}
+	exit(1);
+}
+
 //Check for last modifiy date & update XML & PNG if needed
-if (!is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
+if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
 
 	//get the newer version of the XML
-	if(is_file($cachedWeatherUrl)) unlink($cachedWeatherUrl); // Remove old data file
-	exec("/usr/bin/wget --output-document=$cachedWeatherUrl \"".$APIurl."\"");
+	if (is_file($cachedWeatherUrl)) {
+		// Remove old data file
+		unlink($cachedWeatherUrl);
+	}
+	exec("/usr/bin/wget -q -O $cachedWeatherUrl \"".$APIurl."\"", $output, $return_val);
+	unset($output);
 
-	//Read in Weather Data
+	// Check that our download of the data went well
+	if ($return_val != 0) {
+		exitFor503("Data download failed from " . $APIurl);
+	}
+
+	//Read in cached Weather Data
 	$xml = simplexml_load_file($cachedWeatherUrl, null, LIBXML_NOCDATA);
 
+	if (isset($xml->error)) {
+		exitFor503($xml->error->msg);
+	}
+
 	//Read in SVG file
-	$str=file_get_contents($svgTemplate);
+	$str = file_get_contents($svgTemplate);
 
 	//Modify SVG by replacing strings
 	$values = array(
@@ -116,6 +150,8 @@ if (!is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $ca
 
 	if($tempFormat == "F"){
 		$tempValues = array(
+			"HIGH_ONE" => $xml->weather[0]->tempMaxF,
+			"LOW_ONE" => $xml->weather[0]->tempMinF,
 			"TEMP_ONE" => $xml->current_condition->temp_F,
 			"HIGH_TWO" => $xml->weather[1]->tempMaxF,
 			"LOW_TWO" => $xml->weather[1]->tempMinF,
@@ -126,6 +162,8 @@ if (!is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $ca
 		);
 	}else{
 		$tempValues = array(
+			"HIGH_ONE" => $xml->weather[0]->tempMaxC,
+			"LOW_ONE" => $xml->weather[0]->tempMinC,
 			"TEMP_ONE" => $xml->current_condition->temp_C,
 			"HIGH_TWO" => $xml->weather[1]->tempMaxC,
 			"LOW_TWO" => $xml->weather[1]->tempMinC,
@@ -145,7 +183,10 @@ if (!is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $ca
 
 	//Converting to PNG
 	exec("/usr/bin/convert $svgProcessed $pngProcessed ");
+}
 
+if (!is_file($svgProcessed)) {
+	exitFor503("No image file was found to output");
 }
 
 //Output the image from pre-processed PNG

@@ -10,7 +10,7 @@
 //		MorganHK
 //		pwhittlesea
 //
-include_once("settings.php");
+require("settings.php");
 
 /**------------------- STATICS ------------------**/
 
@@ -34,6 +34,12 @@ $cachedRSSFeed = "http://feeds.bbci.co.uk/news/rss.xml";
 
 // XML file that stores the RSS data
 $cachedRSSData = "rss-data.xml";
+
+// XML file that stores the Cal data
+$calCachedData = "cal-data.xml";
+
+// Google schema (this means we are locked to google
+$googleSchema = "http://schemas.google.com/g/2005";
 
 /**--------------- END OF STATICS ---------------**/
 
@@ -115,24 +121,31 @@ function exitFor503($msg) {
 	exit(1);
 }
 
-//Check for last modifiy date & update XML & PNG if needed
-if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
-
+function cacheAndParseXML($fileToCache, $URL) {
 	//get the newer version of the XML
-	if (is_file($cachedWeatherUrl)) {
+	if (is_file($fileToCache)) {
 		// Remove old data file
-		unlink($cachedWeatherUrl);
+		unlink($fileToCache);
 	}
-	exec("/usr/bin/wget -q -O $cachedWeatherUrl \"".$APIurl."\"", $output, $return_val);
+
+	exec("/usr/bin/wget -q -O $fileToCache \"".$URL."\"", $output, $return_val);
 	unset($output);
 
 	// Check that our download of the data went well
 	if ($return_val != 0) {
-		exitFor503("Data download failed from " . $APIurl);
+		exitFor503("Data download failed from " . $URL);
 	}
 
 	//Read in cached Weather Data
-	$xml = simplexml_load_file($cachedWeatherUrl, null, LIBXML_NOCDATA);
+	return simplexml_load_file($fileToCache, null, LIBXML_NOCDATA);
+}
+
+//Check for last modifiy date & update XML & PNG if needed
+if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
+
+	// Fetch our weather data
+	$xml = cacheAndParseXML($cachedWeatherUrl, $APIurl);
+	// $xml = simplexml_load_file($cachedWeatherUrl, null, LIBXML_NOCDATA);
 
 	if (isset($xml->error)) {
 		exitFor503($xml->error->msg);
@@ -184,8 +197,8 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 	}
 	$str = str_replace(array_keys($tempValues), array_values($tempValues), $str);
 
-	exec("/usr/bin/wget -q -O $cachedRSSData \"".$cachedRSSFeed."\"");
-	$rss = simplexml_load_file($cachedRSSFeed, null, LIBXML_NOCDATA);
+	// Fetch our RSS feed data
+	$rss = cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
 
 	$lines = array();
 	for ($x = 0; $x <= 10; $x++) {
@@ -207,6 +220,24 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 	}
 
 	$str = str_replace(array_keys($stories), array_values($stories), $str);
+
+	if (isset($userCalRSSFeed) && $userCalRSSFeed != "") {
+		$cal = cacheAndParseXML($calCachedData, $userCalRSSFeed);
+
+		$now = strtotime("now");
+		$binWarning = false;
+
+		foreach ($cal->entry as $entry) {
+			$when = $entry->children($googleSchema)->when;
+			$timestamp = strtotime($when->attributes()->startTime . "");
+			$warningStart = strtotime("-12 hours", $timestamp);
+			$warningEnd = strtotime("+12 hours", $timestamp);
+			if ($warningStart <= $now && $now < $warningEnd) {
+				$binWarning = true;
+			}
+		}
+		$str = str_replace("SPECIAL_ITEM", "bin_day", $str);
+	}
 
 	//Writing out modified SVG
 	if (is_file($svgProcessed)) {

@@ -23,3 +23,6 @@ $lineWrap = false;
 
 // URL to get the RSS info from
 $userRSSFeed = "http://feeds.bbci.co.uk/news/technology/rss.xml";
+
+// User calendar feed for Bin collection etc.
+$userCalRSSFeed = "";

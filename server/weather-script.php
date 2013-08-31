@@ -11,11 +11,19 @@
 //		pwhittlesea
 //
 require("settings.php");
+require("YahooWeather.class.php");
+require("Util.class.php");
 
 /**------------------- STATICS ------------------**/
 
 // XML file that stores the weather data
 $cachedWeatherUrl = "weather-data.xml";
+
+// XML file that stores the RSS data
+$cachedRSSData = "rss-data.xml";
+
+// XML file that stores the Cal data
+$calCachedData = "cal-data.xml";
 
 // SVG template with variable names as place-holders
 $svgTemplate = "weather-script-preprocess.svg";
@@ -27,182 +35,62 @@ $svgProcessed = "weather-script-output.svg";
 $pngProcessed = "weather-script-output.png";
 
 // The base URL for the weather service
-$weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx";
+$weatherOnlineURL = YahooWeather::$URL;
 
 // News RSS feed
 $cachedRSSFeed = "http://feeds.bbci.co.uk/news/rss.xml";
-
-// XML file that stores the RSS data
-$cachedRSSData = "rss-data.xml";
-
-// XML file that stores the Cal data
-$calCachedData = "cal-data.xml";
 
 // Google schema (this means we are locked to google
 $googleSchema = "http://schemas.google.com/g/2005";
 
 /**--------------- END OF STATICS ---------------**/
 
-// The location to query
-$queryLocation = (isset($staticLocation) && $staticLocation != "") ? $staticLocation : $_SERVER['REMOTE_ADDR'];
-
 // Check the user hasn't overridden the RSS location
 $cachedRSSFeed = (isset($userRSSFeed) && $userRSSFeed != "") ? $userRSSFeed : $cachedRSSFeed;
 
 // Are we debugging
-$debug = (isset($_GET['develop'])) ? true : false;
+Util::setDebug((isset($_GET['develop'])));
 
 // API URL
-$APIurl = $weatherOnlineURL.'?q='.$queryLocation.'&extra=localObsTime&includeLocation=yes&format=xml&num_of_days='.$retrievePeriod.'&key='.$API_key;
-
-// Equivalence table between
-// original icons from https://github.com/mpetroff/kindle-weather-display
-// to worldweatheronline.com weather codes
-$iconEquivalence = array(
-	"113" => "skc",
-	"116" => "sct",
-	"119" => "bkn",
-	"122" => "ovc",
-	"143" => "hi_shwrs",
-	"176" => "shra",
-	"179" => "ip",
-	"182" => "ip",
-	"185" => "fzra",
-	"200" => "tsra",
-	"227" => "sn",
-	"230" => "blizzard",
-	"248" => "fg",
-	"260" => "fg",
-	"263" => "shra",
-	"266" => "hi_shwrs",
-	"281" => "mix",
-	"284" => "mix",
-	"293" => "hi_shwrs",
-	"296" => "hi_shwrs",
-	"299" => "ra",
-	"302" => "ra",
-	"305" => "ra",
-	"308" => "ra",
-	"311" => "rasn",
-	"314" => "ip",
-	"317" => "ip",
-	"320" => "sn",
-	"323" => "sn",
-	"326" => "sn",
-	"329" => "blizzard",
-	"332" => "blizzard",
-	"335" => "blizzard",
-	"338" => "sn",
-	"350" => "ip",
-	"353" => "shra",
-	"356" => "ra",
-	"359" => "ra",
-	"362" => "ip",
-	"365" => "ip",
-	"368" => "sn",
-	"371" => "blizzard",
-	"374" => "ip",
-	"377" => "ip",
-	"386" => "scttsra",
-	"389" => "tsra",
-	"392" => "tsra",
-	"395" => "blizzard"
-);
-
-function exitFor503($msg) {
-	global $debug;
-
-	header('HTTP/1.1 503 Service Temporarily Unavailable');
-	header('Status: 503 Service Temporarily Unavailable');
-	header('Retry-After: 300');
-	if ($debug) {
-		echo $msg;
-	}
-	exit(1);
-}
-
-function cacheAndParseXML($fileToCache, $URL) {
-	//get the newer version of the XML
-	if (is_file($fileToCache)) {
-		// Remove old data file
-		unlink($fileToCache);
-	}
-
-	exec("/usr/bin/wget -q -O $fileToCache \"".$URL."\"", $output, $return_val);
-	unset($output);
-
-	// Check that our download of the data went well
-	if ($return_val != 0) {
-		exitFor503("Data download failed from " . $URL);
-	}
-
-	//Read in cached Weather Data
-	return simplexml_load_file($fileToCache, null, LIBXML_NOCDATA);
-}
+$APIurl = $weatherOnlineURL . '?w=' . $queryLocation . '&u=' . strtolower($tempFormat);
 
 //Check for last modifiy date & update XML & PNG if needed
-if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
+if (Util::$DEBUG || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
 
 	// Fetch our weather data
-	$xml = cacheAndParseXML($cachedWeatherUrl, $APIurl);
-	// $xml = simplexml_load_file($cachedWeatherUrl, null, LIBXML_NOCDATA);
-
-	if (isset($xml->error)) {
-		exitFor503($xml->error->msg);
-	}
+	$yahoo = new YahooWeather($cachedWeatherUrl, $APIurl);
 
 	//Read in SVG file
 	$str = file_get_contents($svgTemplate);
 
 	//Modify SVG by replacing strings
 	$values = array(
-		"WEATHERDATA_CREDIT" => "Data provider: World Weather Online", //required by weather data-provider
-		"LAST_UPDATE" => $xml->current_condition->localObsDateTime,
-		"LOCATION_ONE" => $xml->nearest_area->areaName,
-		"TEMP_SYMB" => $tempFormat,
-		"REH_ONE" => $xml->current_condition->humidity,
-		"ICON_ONE" => $iconEquivalence["".$xml->current_condition->weatherCode],
-		"ICON_TWO" => $iconEquivalence["".$xml->weather[1]->weatherCode],
-		"ICON_THREE" => $iconEquivalence["".$xml->weather[2]->weatherCode],
-		"ICON_FOUR" => $iconEquivalence["".$xml->weather[3]->weatherCode],
+		"WEATHERDATA_CREDIT" => "Data provider: Yahoo! Weather", //required by weather data-provider
+		"LAST_UPDATE" => $yahoo->getBuildDate(),
 		"DAY_THREE" => date('l', strtotime('+2 days')),
-		"DAY_FOUR" => date('l', strtotime('+3 days'))
+		"DAY_FOUR" => date('l', strtotime('+3 days')),
+		"TEMP_ONE" => $yahoo->getCurrentTemp(),
+		"ICON_ONE" => $yahoo->getCurrentSymbol(),
+		"ICON_TWO" => $yahoo->getSymbolForDay(1),
+		"ICON_THREE" => $yahoo->getSymbolForDay(2),
+		"ICON_FOUR" => $yahoo->getSymbolForDay(3),
+		"HIGH_ONE" => $yahoo->getHighForDay(0),
+		"HIGH_TWO" => $yahoo->getHighForDay(1),
+		"HIGH_THREE" => $yahoo->getHighForDay(2),
+		"HIGH_FOUR" => $yahoo->getHighForDay(3),
+		"LOW_ONE" => $yahoo->getLowForDay(0),
+		"LOW_TWO" => $yahoo->getLowForDay(1),
+		"LOW_THREE" => $yahoo->getLowForDay(2),
+		"LOW_FOUR" => $yahoo->getLowForDay(3)
 	);
 	$str = str_replace(array_keys($values), array_values($values), $str);
-
-	if($tempFormat == "F"){
-		$tempValues = array(
-			"HIGH_ONE" => $xml->weather[0]->tempMaxF,
-			"LOW_ONE" => $xml->weather[0]->tempMinF,
-			"TEMP_ONE" => $xml->current_condition->temp_F,
-			"HIGH_TWO" => $xml->weather[1]->tempMaxF,
-			"LOW_TWO" => $xml->weather[1]->tempMinF,
-			"HIGH_THREE" => $xml->weather[2]->tempMaxF,
-			"LOW_THREE" => $xml->weather[2]->tempMinF,
-			"HIGH_FOUR" => $xml->weather[3]->tempMaxF,
-			"LOW_FOUR" => $xml->weather[3]->tempMinF
-		);
-	}else{
-		$tempValues = array(
-			"HIGH_ONE" => $xml->weather[0]->tempMaxC,
-			"LOW_ONE" => $xml->weather[0]->tempMinC,
-			"TEMP_ONE" => $xml->current_condition->temp_C,
-			"HIGH_TWO" => $xml->weather[1]->tempMaxC,
-			"LOW_TWO" => $xml->weather[1]->tempMinC,
-			"HIGH_THREE" => $xml->weather[2]->tempMaxC,
-			"LOW_THREE" => $xml->weather[2]->tempMinC,
-			"HIGH_FOUR" => $xml->weather[3]->tempMaxC,
-			"LOW_FOUR" => $xml->weather[3]->tempMinC
-		);
-	}
-	$str = str_replace(array_keys($tempValues), array_values($tempValues), $str);
 
 	// Are we displaying a special message
 	$specialMSG = false;
 
 	// Check the bin cal
 	if (isset($userCalRSSFeed) && $userCalRSSFeed != "") {
-		$cal = cacheAndParseXML($calCachedData, $userCalRSSFeed);
+		$cal = Util::cacheAndParseXML($calCachedData, $userCalRSSFeed);
 
 		$now = strtotime("now");
 		$binWarning = false;
@@ -224,7 +112,7 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 	}
 
 	// Fetch our RSS feed data
-	$rss = cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
+	$rss = Util::cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
 
 	$newsRows = 9;
 
@@ -267,7 +155,7 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 }
 
 if (!is_file($svgProcessed)) {
-	exitFor503("No image file was found to output");
+	Util::exitFor503("No image file was found to output");
 }
 
 //Output the image from pre-processed PNG

@@ -197,30 +197,10 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 	}
 	$str = str_replace(array_keys($tempValues), array_values($tempValues), $str);
 
-	// Fetch our RSS feed data
-	$rss = cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
+	// Are we displaying a special message
+	$specialMSG = false;
 
-	$lines = array();
-	for ($x = 0; $x <= 10; $x++) {
-		$headline = "" . $rss->channel->item[$x]->title;
-		if ($lineWrap) {
-			$lines = array_merge($lines, explode("<br>", wordwrap($headline, 45, "<br>")));
-		} else {
-			if (strlen($headline) > 45) {
-				$headline = substr($headline, 0, 43);
-				$headline = substr($headline, 0, strrpos($headline, " ")) . "...";
-			}
-			$lines[] = $headline;
-		}
-	}
-
-	$stories = array();
-	for ($x = 1; $x <= 10; $x++) {
-		$stories["STORY_" . $x] =  $lines[$x-1];
-	}
-
-	$str = str_replace(array_keys($stories), array_values($stories), $str);
-
+	// Check the bin cal
 	if (isset($userCalRSSFeed) && $userCalRSSFeed != "") {
 		$cal = cacheAndParseXML($calCachedData, $userCalRSSFeed);
 
@@ -234,10 +214,47 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 			$warningEnd = strtotime("+12 hours", $timestamp);
 			if ($warningStart <= $now && $now < $warningEnd) {
 				$binWarning = true;
+				$str = str_replace("BIN_DAY_TYPE", strtoupper($entry->title), $str);
 			}
 		}
-		$str = str_replace("SPECIAL_ITEM", "bin_day", $str);
+		if ($binWarning) {
+			$str = str_replace("SPECIAL_ITEM", "bin_day", $str);
+			$specialMSG = true;
+		}
 	}
+
+	// Fetch our RSS feed data
+	$rss = cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
+
+	$newsRows = 9;
+
+	$lines = array();
+	for ($x = 0; $x <= $newsRows; $x++) {
+		$headline = "" . $rss->channel->item[$x]->title;
+		if ($lineWrap) {
+			$lines = array_merge($lines, explode("<br>", wordwrap($headline, 45, "<br>")));
+		} else {
+			if (strlen($headline) > 45) {
+				$headline = substr($headline, 0, 43);
+				$headline = substr($headline, 0, strrpos($headline, " ")) . "...";
+			}
+			$lines[] = $headline;
+		}
+	}
+
+	$stories = array();
+	for ($x = 1; $x <= $newsRows; $x++) {
+		$stories["STORY_" . $x] =  $lines[$x-1];
+	}
+
+	// Reduce rows if special MSG is shown
+	if ($specialMSG) {
+		for ($x = $newsRows; $x > $newsRows - 4; $x--) {
+			$stories["STORY_" . $x] =  "";
+		}
+	}
+
+	$str = str_replace(array_keys($stories), array_values($stories), $str);
 
 	//Writing out modified SVG
 	if (is_file($svgProcessed)) {

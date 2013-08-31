@@ -29,10 +29,19 @@ $pngProcessed = "weather-script-output.png";
 // The base URL for the weather service
 $weatherOnlineURL = "http://api.worldweatheronline.com/free/v1/weather.ashx";
 
+// News RSS feed
+$cachedRSSFeed = "http://feeds.bbci.co.uk/news/rss.xml";
+
+// XML file that stores the RSS data
+$cachedRSSData = "rss-data.xml";
+
 /**--------------- END OF STATICS ---------------**/
 
 // The location to query
 $queryLocation = (isset($staticLocation) && $staticLocation != "") ? $staticLocation : $_SERVER['REMOTE_ADDR'];
+
+// Check the user hasn't overridden the RSS location
+$cachedRSSFeed = (isset($userRSSFeed) && $userRSSFeed != "") ? $userRSSFeed : $cachedRSSFeed;
 
 // Are we debugging
 $debug = (isset($_GET['develop'])) ? true : false;
@@ -174,6 +183,30 @@ if ($debug || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeather
 		);
 	}
 	$str = str_replace(array_keys($tempValues), array_values($tempValues), $str);
+
+	exec("/usr/bin/wget -q -O $cachedRSSData \"".$cachedRSSFeed."\"");
+	$rss = simplexml_load_file($cachedRSSFeed, null, LIBXML_NOCDATA);
+
+	$lines = array();
+	for ($x = 0; $x <= 10; $x++) {
+		$headline = "" . $rss->channel->item[$x]->title;
+		if ($lineWrap) {
+			$lines = array_merge($lines, explode("<br>", wordwrap($headline, 45, "<br>")));
+		} else {
+			if (strlen($headline) > 45) {
+				$headline = substr($headline, 0, 43);
+				$headline = substr($headline, 0, strrpos($headline, " ")) . "...";
+			}
+			$lines[] = $headline;
+		}
+	}
+
+	$stories = array();
+	for ($x = 1; $x <= 10; $x++) {
+		$stories["STORY_" . $x] =  $lines[$x-1];
+	}
+
+	$str = str_replace(array_keys($stories), array_values($stories), $str);
 
 	//Writing out modified SVG
 	if (is_file($svgProcessed)) {

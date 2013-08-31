@@ -81,6 +81,13 @@
 	<text style="text-anchor:start;" font-size="20px" y="375" x="535">LOW_FOUR&#176;</text>
 </g>
 
+<g font-family="DejaVu Sans">
+	<text style="text-anchor:middle;" font-size="20px" y="450" x="300">Latest News</text>
+	<text style="text-anchor:start;" font-size="25px" y="490" x="20">STORY_1</text>
+	<text style="text-anchor:start;" font-size="25px" y="520" x="20">STORY_2</text>
+	<text style="text-anchor:start;" font-size="25px" y="550" x="20">STORY_3</text>
+</g>
+
 <!-- Finally we need to add credit to WWO -->
 <g font-family="DejaVu Sans">
 	<text style="text-anchor:left;" font-size="10px" y="790" x="0">WEATHERDATA_CREDIT</text>

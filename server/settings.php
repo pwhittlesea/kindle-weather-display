@@ -17,3 +17,9 @@ $tempFormat = "C";
 
 // A static location to generate data for
 $staticLocation = "";
+
+// Wrap news story lines
+$lineWrap = false;
+
+// URL to get the RSS info from
+$userRSSFeed = "http://feeds.bbci.co.uk/news/technology/rss.xml";

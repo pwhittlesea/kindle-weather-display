@@ -6,6 +6,9 @@ class YahooWeather {
 
 	public static $YNS = "http://xml.weather.yahoo.com/ns/rss/1.0";
 
+	// XML file that stores the weather data
+	public static $FILE = "weather-data.xml";
+
 	private $conversion = array(
 		"0" => "tornado",
 		"1" => "tropical storm",
@@ -108,9 +111,11 @@ class YahooWeather {
 
 	private $xmlData;
 
-	public function __construct($cachedWeatherUrl, $APIurl) {
-		$this->xmlData = Util::cacheAndParseXML($cachedWeatherUrl, $APIurl);
-		// $this->xmlData = simplexml_load_file($cachedWeatherUrl, null, LIBXML_NOCDATA);
+	public function __construct($queryLocation, $tempFormat) {
+		// API URL
+		$APIurl = YahooWeather::$URL . '?w=' . $queryLocation . '&u=' . strtolower($tempFormat);
+		$this->xmlData = Util::cacheAndParseXML(YahooWeather::$FILE, $APIurl);
+		// $this->xmlData = simplexml_load_file(YahooWeather::$FILE, null, LIBXML_NOCDATA);
 	}
 
 	public function getBuildDate() {

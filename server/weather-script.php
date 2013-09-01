@@ -12,16 +12,11 @@
 //
 require("settings.php");
 require("YahooWeather.class.php");
+require("News.class.php");
 require("Quotes.class.php");
 require("Util.class.php");
 
 /**------------------- STATICS ------------------**/
-
-// XML file that stores the weather data
-$cachedWeatherUrl = "weather-data.xml";
-
-// XML file that stores the RSS data
-$cachedRSSData = "rss-data.xml";
 
 // XML file that stores the Cal data
 $calCachedData = "cal-data.xml";
@@ -35,31 +30,19 @@ $svgProcessed = "weather-script-output.svg";
 // Output PNG file after conversion
 $pngProcessed = "weather-script-output.png";
 
-// The base URL for the weather service
-$weatherOnlineURL = YahooWeather::$URL;
-
-// News RSS feed
-$cachedRSSFeed = "http://feeds.bbci.co.uk/news/rss.xml";
-
 // Google schema (this means we are locked to google
 $googleSchema = "http://schemas.google.com/g/2005";
 
 /**--------------- END OF STATICS ---------------**/
 
-// Check the user hasn't overridden the RSS location
-$cachedRSSFeed = (isset($userRSSFeed) && $userRSSFeed != "") ? $userRSSFeed : $cachedRSSFeed;
-
 // Are we debugging
 Util::setDebug((isset($_GET['develop'])));
-
-// API URL
-$APIurl = $weatherOnlineURL . '?w=' . $queryLocation . '&u=' . strtolower($tempFormat);
 
 //Check for last modifiy date & update XML & PNG if needed
 if (Util::$DEBUG || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
 
 	// Fetch our weather data
-	$yahoo = new YahooWeather($cachedWeatherUrl, $APIurl);
+	$yahoo = new YahooWeather($queryLocation, $tempFormat);
 
 	//Read in SVG file
 	$str = file_get_contents($svgTemplate);
@@ -112,44 +95,19 @@ if (Util::$DEBUG || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedW
 		}
 	}
 
+	// Fetch the latest quote if its the right time
 	if (Quotes::isQuoteTime()) {
 		$replacements = Quotes::getLatestQuoteAndAuthor();
 		$str = str_replace(array_keys($replacements), array_values($replacements), $str);
 		$specialMSG = true;
 	}
 
-	// Fetch our RSS feed data
-	$rss = Util::cacheAndParseXML($cachedRSSData, $cachedRSSFeed);
+	// If we have a special MSG then we have less news rows
+	$newsRows = ($specialMSG) ? 5 : 9;
 
-	$newsRows = 9;
-
-	$lines = array();
-	for ($x = 0; $x <= $newsRows; $x++) {
-		$headline = "" . $rss->channel->item[$x]->title;
-		if ($lineWrap) {
-			$lines = array_merge($lines, explode("<br>", wordwrap($headline, 45, "<br>")));
-		} else {
-			if (strlen($headline) > 45) {
-				$headline = substr($headline, 0, 43);
-				$headline = substr($headline, 0, strrpos($headline, " ")) . "...";
-			}
-			$lines[] = $headline;
-		}
-	}
-
-	$stories = array();
-	for ($x = 1; $x <= $newsRows; $x++) {
-		$stories["STORY_" . $x] =  $lines[$x-1];
-	}
-
-	// Reduce rows if special MSG is shown
-	if ($specialMSG) {
-		for ($x = $newsRows; $x > $newsRows - 4; $x--) {
-			$stories["STORY_" . $x] =  "";
-		}
-	}
-
-	$str = str_replace(array_keys($stories), array_values($stories), $str);
+	// Fetch the latest news stories
+	$replacements = News::getLatestStories($newsRows, $userRSSFeed, $lineWrap);
+	$str = str_replace(array_keys($replacements), array_values($replacements), $str);
 
 	//Writing out modified SVG
 	if (is_file($svgProcessed)) {

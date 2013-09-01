@@ -6,7 +6,7 @@ class News {
 	public static $URL = "http://feeds.bbci.co.uk/news/rss.xml";
 
 	// XML file that stores the RSS data
-	public static $FILE = "rss-data.xml";
+	public static $FILE = "data/rss-data.xml";
 
 	public static function getLatestStories($newsRows, $userOverrideURL, $lineWrap) {
 		$url = (isset($userOverrideURL) && !empty($userOverrideURL)) ? $userOverrideURL : News::$URL;

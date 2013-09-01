@@ -4,7 +4,7 @@ class Quotes {
 
 	public static $URL = "http://feeds.feedburner.com/quotationspage/mqotd";
 
-	public static $FILE = "quote-data.xml";
+	public static $FILE = "data/quote-data.xml";
 
 	public static function getLatestQuoteAndAuthor() {
 		$lineWidth = 55;

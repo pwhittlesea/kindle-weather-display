@@ -7,7 +7,7 @@ class YahooWeather {
 	public static $YNS = "http://xml.weather.yahoo.com/ns/rss/1.0";
 
 	// XML file that stores the weather data
-	public static $FILE = "weather-data.xml";
+	public static $FILE = "data/weather-data.xml";
 
 	private $conversion = array(
 		"0" => "tornado",

@@ -21,7 +21,7 @@ require("modules/YahooWeather.class.php");
 /**------------------- STATICS ------------------**/
 
 // XML file that stores the Cal data
-$calCachedData = "cal-data.xml";
+$calCachedData = "data/cal-data.xml";
 
 // SVG template with variable names as place-holders
 $svgTemplate = "weather-script-preprocess.svg";

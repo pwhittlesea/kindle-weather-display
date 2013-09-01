@@ -2,11 +2,11 @@
 
 cd "$(dirname "$0")"
 
-rm weather-script-output.png
+rm -f weather-script-output.png
 eips -c
 eips -c
 
-if wget -O weather-script-output.png http://server/path/to/weather-script.php; then
+if wget -q -O weather-script-output.png http://apple.pi.thega.me.uk/kindle-weather-display/server/; then
 	eips -g weather-script-output.png
 else
 	eips -g weather-image-error.png

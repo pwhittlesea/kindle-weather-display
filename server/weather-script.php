@@ -13,15 +13,13 @@
 require("settings.php");
 
 // Import the modules needed
+require("modules/GoogleBins.class.php");
 require("modules/News.class.php");
 require("modules/Quotes.class.php");
 require("modules/Util.class.php");
 require("modules/YahooWeather.class.php");
 
 /**------------------- STATICS ------------------**/
-
-// XML file that stores the Cal data
-$calCachedData = "data/cal-data.xml";
 
 // SVG template with variable names as place-holders
 $svgTemplate = "images/preprocess.svg";
@@ -31,9 +29,6 @@ $svgProcessed = "output/weather-script-output.svg";
 
 // Output PNG file after conversion
 $pngProcessed = "output/weather-script-output.png";
-
-// Google schema (this means we are locked to google
-$googleSchema = "http://schemas.google.com/g/2005";
 
 /**--------------- END OF STATICS ---------------**/
 
@@ -72,36 +67,18 @@ if (Util::$DEBUG || !is_file(YahooWeather::$FILE) || (time() > (filemtime(YahooW
 	$str = str_replace(array_keys($values), array_values($values), $str);
 
 	// Are we displaying a special message
-	$specialMSG = false;
+	$specialMSG = true;
 
-	// Check the bin cal
-	if (isset($userCalRSSFeed) && $userCalRSSFeed != "") {
-		$cal = Util::cacheAndParseXML($calCachedData, $userCalRSSFeed);
-
-		$now = strtotime("now");
-		$binWarning = false;
-
-		foreach ($cal->entry as $entry) {
-			$when = $entry->children($googleSchema)->when;
-			$timestamp = strtotime($when->attributes()->startTime . "");
-			$warningStart = strtotime("-12 hours", $timestamp);
-			$warningEnd = strtotime("+12 hours", $timestamp);
-			if ($warningStart <= $now && $now < $warningEnd) {
-				$binWarning = true;
-				$str = str_replace("BIN_DAY_TYPE", strtoupper($entry->title), $str);
-			}
-		}
-		if ($binWarning) {
-			$str = str_replace("SPECIAL_ITEM", "bin_day", $str);
-			$specialMSG = true;
-		}
-	}
-
-	// Fetch the latest quote if its the right time
-	if (Quotes::isQuoteTime()) {
+	// Check our special events
+	$binCal = new GoogleBins($userCalRSSFeed);
+	if ($binCal->isBinDay()) {
+		$replacements = $binCal->getBinDay();
+		$str = str_replace(array_keys($replacements), array_values($replacements), $str);
+	} else if (Quotes::isQuoteTime()) {
 		$replacements = Quotes::getLatestQuoteAndAuthor();
 		$str = str_replace(array_keys($replacements), array_values($replacements), $str);
-		$specialMSG = true;
+	} else {
+		$specialMSG = false;
 	}
 
 	// If we have a special MSG then we have less news rows

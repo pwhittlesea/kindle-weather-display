@@ -24,13 +24,13 @@ require("modules/YahooWeather.class.php");
 $calCachedData = "data/cal-data.xml";
 
 // SVG template with variable names as place-holders
-$svgTemplate = "weather-script-preprocess.svg";
+$svgTemplate = "images/preprocess.svg";
 
 // Output file after processing SVG template
-$svgProcessed = "weather-script-output.svg";
+$svgProcessed = "output/weather-script-output.svg";
 
 // Output PNG file after conversion
-$pngProcessed = "weather-script-output.png";
+$pngProcessed = "output/weather-script-output.png";
 
 // Google schema (this means we are locked to google
 $googleSchema = "http://schemas.google.com/g/2005";

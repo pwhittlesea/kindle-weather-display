@@ -1,13 +1,28 @@
-Forked from https://github.com/mpetroff/kindle-weather-display
+Origins
+=======
+For more information on the orignal inspiration see [the original blog post](http://www.mpetroff.net/archives/2012/09/14/kindle-weather-display/).
 
-/!\Work in Progress/!\
+Code originally designed by [mpetroff](https://github.com/mpetroff/kindle-weather-display), modified by [morganhk](https://github.com/morganhk/kindle-weather-display) before ending up here.
 
-TODO:
-- [ ] Install job into cron programmatically (include un-install from cron)
-- [ ] Remove ugly while-loop
- 
-DONE:
-- [x] Application turns on usbnet before running
-- [x] Run as Kite application instead of "on-boot" (my kindle used to get stuck in boot loops since the framework didn't want to be killed so early)
-- [x] PHP replacement for original Python and Bash scripts on server side
-- [x] Use World Weather Online API and geo-location service (if, like me, you tend to move around quite a bit)
+Features
+========
+
+Weather
+-------
+The Weather data is provided by Yahoo! Weather. The location of which is defined in the config (see below).
+
+RSS
+---
+Latest RSS articles will be displayed under the latest weather. These RSS articles are downloaded from any RSS compliant URL which is specified in the config (see below).
+
+Bins
+----
+Making the presumption that you have a dedicated Google Calendar set up with events for your Garbage collection, a warning will be shown 12 hours before your bins are due to be collected. The URL of the calendar needs to be configured in the config (see below).
+
+Quotes
+------
+Every morning between midnight and midday, the latest motivational quote will be shown at the bottom of the screen (presuming there isn't a more important notification to show).
+
+Setup
+=====
+**TODO**

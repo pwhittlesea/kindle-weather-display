@@ -11,10 +11,12 @@
 //		pwhittlesea
 //
 require("settings.php");
-require("YahooWeather.class.php");
-require("News.class.php");
-require("Quotes.class.php");
-require("Util.class.php");
+
+// Import the modules needed
+require("modules/News.class.php");
+require("modules/Quotes.class.php");
+require("modules/Util.class.php");
+require("modules/YahooWeather.class.php");
 
 /**------------------- STATICS ------------------**/
 

@@ -7,7 +7,7 @@
 //		Based on: https://github.com/mpetroff/kindle-weather-display
 //
 //		Date: 2013-03-06
-//		MorganHK
+//		Original Concept - MorganHK
 //		pwhittlesea
 //
 require("settings.php");
@@ -39,7 +39,7 @@ $googleSchema = "http://schemas.google.com/g/2005";
 Util::setDebug((isset($_GET['develop'])));
 
 //Check for last modifiy date & update XML & PNG if needed
-if (Util::$DEBUG || !is_file($cachedWeatherUrl) || (time() > (filemtime($cachedWeatherUrl) + $cachePeriod))){
+if (Util::$DEBUG || !is_file(YahooWeather::$FILE) || (time() > (filemtime(YahooWeather::$FILE) + $cachePeriod))){
 
 	// Fetch our weather data
 	$yahoo = new YahooWeather($queryLocation, $tempFormat);
